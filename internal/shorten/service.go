@@ -2,8 +2,10 @@ package shorten
 
 import (
 	"context"
+	"log"
 
 	"github.com/amir-amirov/go-url-shortener/internal/model"
+	"github.com/google/uuid"
 )
 
 type Storage interface {
@@ -23,5 +25,44 @@ func NewService(storage Storage) *Service {
 }
 
 func (s *Service) Shorten(ctx context.Context, input model.ShortenInput) (*model.Shortening, error) {
-	panic("not implemented") // TODO: Implement Shorten method
+	var (
+		id         = uuid.New().ID()
+		identifier = input.Identifier.OrElse(Shorten(id))
+	)
+
+	dbShortening := model.Shortening{
+		Identifier:  identifier,
+		OriginalURL: input.RawURL,
+	}
+
+	shortening, err := s.storage.Put(ctx, dbShortening)
+	if err != nil {
+		return nil, err
+	}
+
+	return shortening, nil
+}
+
+func (s *Service) Get(ctx context.Context, identifier string) (*model.Shortening, error) {
+	shortening, err := s.storage.Get(ctx, identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	return shortening, nil
+}
+
+func (s *Service) Redirect(ctx context.Context, identifier string) (string, error) {
+	shortening, err := s.storage.Get(ctx, identifier)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.storage.IncrementVisits(ctx, identifier)
+	if err != nil {
+		log.Printf("failed to increment visits for identifier %q: %v", identifier, err)
+	}
+
+	return shortening.OriginalURL, nil
+
 }

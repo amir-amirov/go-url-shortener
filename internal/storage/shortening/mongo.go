@@ -46,7 +46,39 @@ func (m *mgo) Put(ctx context.Context, shortening model.Shortening) (*model.Shor
 
 }
 
-// TODO: Implement Get, Update, Delete methods
+func (m *mgo) Get(ctx context.Context, shorteningID string) (*model.Shortening, error) {
+	const op = "shortening.mgo.Get"
+
+	var shortening mgoShortening
+	if err := m.col().FindOne(ctx, bson.M{"_id": shorteningID}).Decode(&shortening); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("%s: %w", op, model.ErrNotFound)
+		}
+
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return modelShorteningFromMgo(shortening), nil
+}
+
+func (m *mgo) IncrementVisits(ctx context.Context, shorteningID string) error {
+	const op = "shortening.mgo.IncrementVisits"
+
+	var (
+		filter = bson.M{"_id": shorteningID}
+		update = bson.M{
+			"$inc": bson.M{"visits": 1},
+			"$set": bson.M{"updated_at": time.Now().UTC()},
+		}
+	)
+
+	_, err := m.col().UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
 
 type mgoShortening struct {
 	Identifier  string    `bson:"_id"`
@@ -59,6 +91,17 @@ type mgoShortening struct {
 func mgoShorteningFromModel(shortening model.Shortening) mgoShortening {
 	return mgoShortening{
 		Identifier:  shortening.Identifier,
+		OriginalURL: shortening.OriginalURL,
+		Visits:      shortening.Visits,
+		CreatedAt:   shortening.CreatedAt,
+		UpdatedAt:   shortening.UpdatedAt,
+	}
+}
+
+func modelShorteningFromMgo(shortening mgoShortening) *model.Shortening {
+	return &model.Shortening{
+		Identifier: shortening.Identifier,
+		// CreatedBy:   shortening.CreatedBy,
 		OriginalURL: shortening.OriginalURL,
 		Visits:      shortening.Visits,
 		CreatedAt:   shortening.CreatedAt,
