@@ -16,8 +16,9 @@ func main() {
 	dbCtx, dbCancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer dbCancel()
 
-	const mongoDSN = "mongodb+srv://mongodb:mongodb@mycluster.fuoiz.mongodb.net/"
-	const databaseName = "urlshortener"
+	// const mongoDSN = "mongodb+srv://mongodb:mongodb@mycluster.fuoiz.mongodb.net/"
+	const mongoDSN = "mongodb://mongo:27017/"
+	// const databaseName = "urlshortener"
 
 	mgoClient, err := db.Connect(dbCtx, mongoDSN)
 	if err != nil {

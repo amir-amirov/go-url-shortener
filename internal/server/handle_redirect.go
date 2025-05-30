@@ -18,6 +18,7 @@ type redirecter interface {
 func HandleRedirect(redirecter redirecter) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		identifier := ctx.Param("identifier")
+		fmt.Println("Got identifier:", identifier)
 
 		redirectURL, err := redirecter.Redirect(context.TODO(), identifier)
 		if err != nil {
@@ -34,7 +35,6 @@ func HandleRedirect(redirecter redirecter) gin.HandlerFunc {
 			})
 			return
 		}
-		fmt.Println("Redirecting to:", redirectURL)
 
 		ctx.Redirect(http.StatusMovedPermanently, redirectURL)
 	}

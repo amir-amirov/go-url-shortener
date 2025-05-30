@@ -1,0 +1,8 @@
+version: "3.8"
+services:
+  mongo:
+    image: mongo
+  go-app:
+    build: .
+    ports:
+      - "8000:8080"
